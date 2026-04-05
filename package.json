@@ -1,0 +1,16 @@
+{
+  "name": "backend-tubehub",
+  "version": "1.0.0",
+  "description": "A tubehub project",
+  "license": "ISC",
+  "author": "mayur bairagi",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "dev": "npx nodemon server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.0",
+    "prettier": "^3.8.1"
+  }
+}
