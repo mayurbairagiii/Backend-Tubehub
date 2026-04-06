@@ -1,0 +1,14 @@
+const express = require('express');
+const app = express()
+
+const { JSONLIMIT } = require('./constants');
+const cookieParser = require('cookie-parser');
+const path = require('path')
+
+app.use(express.json( { limit: JSONLIMIT } ) )
+app.use(express.urlencoded({extended: true, limit: JSONLIMIT}))
+app.use(express.static(path.join(__dirname, 'public')))
+app.use(cookieParser())
+
+
+module.exports = app;
