@@ -80,7 +80,7 @@ const resisterApi = asyncHandler(async (req,res) => {
 const loginApi = asyncHandler(async (req,res) => {
     const {userName , email , password} = req.body
 
-    if (!userName || !email){
+    if ((!userName && !email)){
         throw new ApiError(401, "userName and email are required")
     }
 
