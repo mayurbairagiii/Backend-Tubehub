@@ -4,6 +4,23 @@ const userModel =  require('../models/user.model')
 const {uploadOnCloudinary} = require('../utils/cloudinary')
 const {ApiResponse} = require('../utils/ApiResponse')
 
+const generateAccessAndRefreshToken = async (userId) => {
+    try {
+        console.log(userId)
+        const user = await userModel.findById(userId)
+
+        const accessToken =  user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave: false})
+
+        return {accessToken , refreshToken}
+
+    } catch (error) {
+        console.log("Error", error?.message || error)
+        throw new ApiError(500, "Token generation failed") 
+    }
+}
 
 const resisterApi = asyncHandler(async (req,res) => {
     const {userName , email , fullName , password} = req.body
@@ -60,5 +77,53 @@ const resisterApi = asyncHandler(async (req,res) => {
 
 })
 
+const loginApi = asyncHandler(async (req,res) => {
+    const {userName , email , password} = req.body
 
-module.exports = {resisterApi}
+    if (!userName || !email){
+        throw new ApiError(401, "userName and email are required")
+    }
+
+    const isUserExist = await userModel.findOne({
+        $or: [{userName}, {email}]
+    })
+
+    console.log("USER FOUND:", isUserExist)
+
+    if (!isUserExist){
+        throw new ApiError(400, "userName and email is not found")
+    }
+
+    const isPasswordValid = await isUserExist.isPasswordValid(password)
+
+    if (!isPasswordValid){
+        throw new ApiError(401, "Invalide Credentials Password is Wrong")
+    }
+
+    const user = await userModel.findById(isUserExist._id).select("-password -refreshToken")
+
+    const {accessToken , refreshToken} = await generateAccessAndRefreshToken(user._id)   
+
+    res.status(200)
+    .cookie("accessToken", accessToken)
+    .cookie("refreshToken", refreshToken,)
+    .json(new ApiResponse(200 , {user: user , accessToken , refreshToken} , "User Logged in Successfully"))
+})
+
+const logoutApi = asyncHandler(async (req,res) => {
+    await userModel.findByIdAndUpdate(req.user._id, 
+    {
+        $set: {refreshToken: undefined}
+    },
+    {
+        new: true
+    })
+
+    return res
+    .status(200)
+    .clearCookie("accessToken")
+    .clearCookie("refreshToken")
+    .json(new ApiResponse(200, "" , "User Logged Out"))
+})
+
+module.exports = {resisterApi , loginApi , logoutApi}
